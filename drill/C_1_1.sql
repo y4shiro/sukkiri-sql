@@ -90,3 +90,83 @@ SELECT *
   FROM 口座
  WHERE 口座番号 LIKE '2______'
     OR 名義 LIKE 'エ__　%コ';
+
+# 第 4 章 検索結果の加工
+# 24. 口座テーブルから、口座番号順に全てのデータを抽出する。ただし、並び替えには列名を指定し、昇順にすること
+SELECT 口座番号, 名義, 種別, 残高, 更新日
+  FROM 口座
+ ORDER BY 口座番号;
+# 25. 口座テーブルから、名義の一覧を取得する。データの重複を除外し、名義の昇順にすること
+SELECT DISTINCT 名義
+  FROM 口座
+ ORDER BY 名義;
+# 26. 口座テーブルから、残高の大きい順にすべてのデータを抽出する。残高が同額の場合には口座番号の昇順にし、並び替えには列番号を指定すること
+SELECT 口座番号, 名義, 種別, 残高, 更新日
+  FROM 口座
+ ORDER BY 4 DESC, 1;
+# 27. 口座テーブルから、更新日を過去の日付順に 10 件抽出する。ただし、更新日の設定が無いデータは除くこと
+SELECT 更新日
+  FROM 口座
+ WHERE 更新日 IS NOT NULL
+ ORDER BY 更新日
+ LIMIT 10;
+# MySQL 以外で OFFSET を使った場合
+SELECT 更新日
+  FROM 口座
+ WHERE 更新日 IS NOT NULL
+ ORDER BY 更新日
+ OFFSET 0 FETCH FIRST 10 ROWS ONLY;
+# 28. 口座テーブルから、更新日と残高を、残高の小さい順に 11 ~ 20 件のみを抽出する。
+# ただし、残高が 0 円または更新日の設定がないデータは除外し、残高が同額の場合には更新日の新しい順(降順)とする
+SELECT 更新日, 残高
+  FROM 口座
+ WHERE 残高 > 0 AND 更新日 IS NOT NULL
+ ORDER BY 残高, 更新日 DESC
+ LIMIT 10 OFFSET 10;
+# 29. 口座テーブルと廃止口座テーブルに登録されている口座番号を昇順に抽出する
+SELECT 口座番号 FROM 口座
+ UNION
+SELECT 口座番号 FROM 廃止口座
+ ORDER BY 口座番号;
+# 30. 口座番号に登録されている名義のうち、廃止口座テーブルには存在しない名義を抽出する。重複データは除き、降順で並べる
+SELECT DISTINCT 名義 FROM 口座;
+SELECT DISTINCT 名義 FROM 廃止口座;
+# PostgreSQL の場合
+SELECT 名義 FROM 口座
+EXCEPT
+SELECT 名義 FROM 廃止口座
+ ORDER BY 1 DESC;
+# MySQL で NOT IN を使用した場合
+SELECT DISTINCT 名義 FROM 口座
+WHERE 名義 NOT IN (
+  SELECT DISTINCT 名義
+    FROM 廃止口座
+)
+ORDER BY 名義 DESC;
+# MySQL で LEFT JOIN + IS NULL を使用した場合
+SELECT DISTINCT 口座.名義
+  FROM 口座
+  LEFT JOIN 廃止口座
+    ON 口座.名義 = 廃止口座.名義
+ WHERE 廃止口座.名義 IS NULL
+ ORDER BY 口座.名義 DESC;
+
+# 31. 口座テーブルと廃止口座テーブルの両方に登録されている名義を昇順に抽出する
+# PostgreSQL などの場合
+   SELECT 名義 FROM 口座
+INTERSECT
+   SELECT 名義 FROM 廃止口座
+    ORDER BY 1;
+# MySQL で INNER JOIN を利用した場合
+SELECT 口座.名義 FROM 口座
+ INNER JOIN 廃止口座
+    ON 口座.名義 = 廃止口座.名義
+ ORDER BY 口座.名義;
+# 32. 口座テーブルと廃止口座テーブルに登録されている口座番号と残高の一覧を取得する
+# ただし、口座テーブルは残高が 0 のもの、廃止口座テーブルは解約時残高が 0 ではないものを抽出の対象とする。一覧は口座番号順とする
+SELECT 口座番号, 残高 FROM 口座
+ WHERE 残高 = 0
+UNION
+SELECT 口座番号, 解約時残高 FROM 廃止口座
+ WHERE 解約時残高 <> 0
+ ORDER BY 1;
