@@ -274,3 +274,51 @@ SELECT 口座番号, 名義, 種別, 残高, date_format(更新日, '%Y年%m月%
 # 48. 口座テーブルから更新日を抽出する。更新日が登録されていない場合は '設定無し' と表記する
 SELECT COALESCE(CAST(更新日 AS CHAR), '設定無し') AS 更新日
   FROM 口座;
+
+# 第 6 章 集計とグループ化
+# 49. 口座テーブルから、残高の合計、最大、最小、平均、登録データ件数を求める
+SELECT SUM(残高), MAX(残高), MIN(残高), AVG(残高), COUNT(*)
+  FROM 口座;
+# 50. 口座テーブルから、種別が '普通' 以外、残高が 100 万円以上、更新日が 2021 年以前のデータ件数を求める
+SELECT COUNT(*) AS 件数
+  FROM 口座
+ WHERE 種別 <> '1'
+   AND 残高 >= 1000000
+   AND 更新日 <= '2021-12-31';
+# 51. 口座テーブルから、更新日が登録されていないデータ件数を求める。ただし、条件式は用いない
+SELECT COUNT(*) - COUNT(更新日) AS 更新日未登録なデータの件数
+  FROM 口座;
+# 52. 口座テーブルから、名義の最大値と最小値を求める
+SELECT MAX(名義), MIN(名義)
+  FROM 口座;
+# 53. 口座テーブルから、最新更新日と最古更新日を求める
+SELECT MAX(更新日), MIN(更新日) FROM 口座;
+# 54. 口座テーブルから、種別ごとの残高の合計、最大、最小、平均、および登録されているデータ件数を求める
+SELECT 種別, SUM(残高) AS 合計, MAX(残高) AS 最大, MIN(残高) AS 最小, AVG(残高) AS 平均, COUNT(種別) AS 件数
+  FROM 口座
+ GROUP BY 種別;
+# 55. 口座テーブルから、口座番号の下 1 桁目が同じ数字であるものを同じグループとし、それぞれのデータ件数を求める。
+# ただし、件数の多い順に並べること
+SELECT SUBSTRING(口座番号, 7, 1) AS 口座番号グループ, COUNT(*) AS 件数
+  FROM 口座
+ GROUP BY SUBSTRING(口座番号, 7, 1)
+ ORDER BY 件数 DESC;
+# 56. 口座テーブルから、更新日の年ごとの残高の合計、最大、最小、平均、登録データ件数を求める
+# ただし、更新日の登録が無いデータは、'XXXX年' として集計する
+SELECT SUBSTRING(COALESCE(更新日, 'XXXX'), 1, 4) AS 年,
+       MAX(残高) AS 残高の最大値, MIN(残高) AS 残高の最小値, AVG(残高) AS 残高平均値, COUNT(*) AS 件数
+  FROM 口座
+ GROUP BY SUBSTRING(COALESCE(更新日, 'XXXX'), 1, 4);
+# 57. 口座テーブルから、種別ごとの残高の合計とデータ件数を求める。
+# ただし、合計が 300 万円以下のものは一覧から取り除く
+SELECT 種別, SUM(残高) AS 残高の合計, COUNT(*) AS 件数
+  FROM 口座
+ GROUP BY 種別
+ HAVING SUM(残高) >= 3000000;
+# 58. 口座テーブルから、名義の一文字が同じグループごとに、データ件数と名義文字数の平均を求める
+# ただし、件数が 10 件以上、または文字数平均が 5 以上のものを抽出対象とする
+# また、名義の全角スペースは文字数に含めない
+SELECT SUBSTRING(名義, 1, 1) AS 名義, COUNT(名義) AS 件数, AVG(CHAR_LENGTH(REPLACE(名義, '　', ''))) AS 文字数の平均
+  FROM 口座
+ GROUP BY SUBSTRING(名義, 1, 1)
+HAVING COUNT(名義) >= 10 OR AVG(CHAR_LENGTH(REPLACE(名義, '　', ''))) > 5;
