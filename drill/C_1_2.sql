@@ -123,3 +123,91 @@ SELECT *
   FROM 注文
  WHERE 数量 >= 10
     OR クーポン割引料 IS NOT NULL;
+
+# 第 4 章 検索結果の加工
+# 25. 商品区分 '衣類' の商品について、商品コードの降順に商品コードと商品名の一覧を取得する
+SELECT 商品コード, 商品名
+  FROM 商品
+ WHERE 商品区分 = '1'
+ ORDER BY 商品コード DESC;
+
+# 26. 注文テーブルから、主キーの昇順に 2022 年 3 月以降の注文一覧を取得する。
+# 取得する項目は、注文日 / 注文番号 / 注文枝番 / 商品コード / 数量とする
+SELECT 注文日, 注文番号, 注文枝番, 商品コード, 数量
+  FROM 注文
+ WHERE 注文日 >= '2022-03-01'
+ ORDER BY 注文日, 注文番号, 注文枝番;
+
+# 27. 注文テーブルから、これまでに注文のあった商品コードを抽出する。重複は除外し、商品コードの昇順に抽出すること
+SELECT DISTINCT 商品コード
+  FROM 注文
+ ORDER BY 商品コード;
+
+# 28. 注文テーブルから、注文のあった日付を新しい順に 10 行抽出する(同一日付が複数回登場しても良い)
+SELECT 注文日
+  FROM 注文
+ ORDER BY 注文日 DESC
+ LIMIT 10;
+# MySQL 以外
+SELECT 注文日
+  FROM 注文
+ ORDER BY 注文日 DESC
+ OFFSET 0 FETCH FIRST 10 ROWS ONLY;
+
+# 29. 商品テーブルから、単価の低い順に並べて 6 ~ 20 行目に当たる商品データを抽出する
+# 同一の単価の場合は、商品区分、商品コードの昇順に並ぶようにする
+SELECT *
+  FROM 商品
+ ORDER BY 単価, 商品区分, 商品コード
+ LIMIT 15 OFFSET 5;
+
+# 30. 廃盤商品テーブルから、2020 / 12 に廃盤されたものと、売上個数が 100 を超えるものを併せて抽出する
+# 一覧は、売上個数の多い順に並べること
+SELECT *
+  FROM 廃番商品
+ WHERE (廃番日 >= '2020-12-01' AND 廃番日 <= '2020-12-31')
+    OR 売上個数 >= 100
+ ORDER BY 売上個数 DESC;
+# 別解
+SELECT *
+  FROM 廃番商品
+ WHERE (廃番日 >= '2020-12-01' AND 廃番日 <= '2020-12-31')
+UNION
+SELECT *
+  FROM 廃番商品
+ WHERE 売上個数 >= 100
+ ORDER BY 売上個数 DESC;
+
+# 31. 商品テーブルから、これまでに注文されたことのない商品コードを昇順に抽出する
+SELECT 商品コード
+  FROM 商品
+ WHERE 商品コード NOT IN(SELECT DISTINCT 商品コード FROM 注文)
+ ORDER BY 商品コード;
+# 別解 LEFT JOIN + IS NULL
+SELECT S.商品コード
+  FROM 商品 AS S
+  LEFT JOIN 注文 AS C
+    ON C.商品コード = S.商品コード
+ WHERE C.商品コード IS NULL
+ ORDER BY S.商品コード;
+# 別解 EXCEPT が利用可能な場合
+SELECT 商品コード
+  FROM 商品
+EXCEPT
+SELECT 商品コード
+  FROM 注文
+ ORDER BY 1;
+
+# 32. 商品テーブルから、これまでに注文された実績のある商品コードを降順に抽出する
+SELECT 商品コード
+  FROM 商品
+ WHERE 商品コード IN (SELECT DISTINCT 商品コード FROM 注文)
+ ORDER BY 商品コード DESC;
+
+# 33. 商品区分が '未分類' で、単価が千円以下と 1 万円を超える商品について、商品コード、商品名、単価を抽出する
+# 単価の低い順に並べ、同額の場合は商品コードの昇順とする
+SELECT 商品コード, 商品名, 単価
+  FROM 商品
+ WHERE 商品区分 = '9'
+   AND (単価 <= 1000 OR 単価 >= 10000)
+ ORDER BY 単価, 商品コード;
