@@ -113,3 +113,63 @@ select *
  where タイプ = '1'
    and 前提イベント番号 is not null
    and 後続イベント番号 is not null;
+
+-- 23. パーティーテーブルから、パーティーの現在の状態コード一覧を取得する。重複は除外する
+select distinct 状態コード
+  from パーティー;
+
+-- 24. パーティーテーブルから、ID と名称を抽出し、ID の昇順に並べる
+select ID, 名称
+  from パーティー
+ order by ID;
+
+-- 25. パーティーテーブルから、名称と職業コードを名称の降順に抽出する
+select 名称, 職業コード
+  from パーティー
+ order by 名称 DESC;
+
+-- 26. パーティーテーブルから、名称 / HP / 状態コードを、状態コードの昇順かつ HP の高い順に抽出する
+select 名称, HP, 状態コード
+  from パーティー
+ order by HP DESC;
+
+-- 27. イベントテーブルから、タイプ / イベント番号 / イベント名称 / 前提イベント番号 / 後続イベント番号を抽出する
+-- タイプの昇順かつイベント番号の昇順に抽出し、並び替えには列番号を指定する
+select タイプ, イベント番号, イベント名称, 前提イベント番号, 後続イベント番号
+  from イベント
+ order by 1, 2;
+
+-- 28. パーティーテーブルから、HP の高い順に 3 件抽出する
+select *
+  from パーティー
+ order by HP desc
+offset 0 fetch first 3 rows only;
+
+-- limit を用いた場合
+select *
+  from パーティー
+ order by HP desc
+ limit 3;
+
+-- 29. パーティーテーブルから、MP が 3 番目に高いデータを抽出する
+select *
+  from パーティー
+ order by MP desc
+offset 2 fetch first 1 rows only;
+
+-- 30. イベントテーブルと経験イベントテーブルから、まだ参加していないイベントの番号を抽出する
+-- イベント番号順に表示すること
+select イベント番号 from イベント
+except
+select イベント番号 from 経験イベント
+ order by 1;
+
+-- 31. イベントテーブルと経験イベントテーブルから、既にクリアされたイベントのうち、タイプがフリーのイベント番号を対象とする。
+-- 抽出には集合演算子を用いること
+select イベント番号
+  from 経験イベント
+ where クリア区分 = '1'
+intersect
+select イベント番号
+  from イベント
+ where タイプ = '2';
