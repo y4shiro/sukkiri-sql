@@ -319,3 +319,88 @@ select coalesce(cast(前提イベント番号 as varchar), '前提なし') as �
        coalesce(cast(後続イベント番号 as varchar), '後続なし') as 後続イベント番号
   from イベント
  order by イベント番号;
+
+-- 45. 主人公のパーティにいるキャラクターの HP と MP について、最大値、最小値、平均値をそれぞれ求める
+select MAX(HP) as HP最大値,
+       MIN(HP) as HP最小値,
+       AVG(HP) as HP平均値,
+       MAX(MP) as MP最大値,
+       MIN(MP) as MP最小値,
+       AVG(MP) as MP平均値
+  from パーティー;
+
+-- 46. イベントテーブルから、タイプ別にイベントの数を取得する。ただし、タイプは日本語で表示すること
+select case タイプ
+         when '1' then '強制'
+         when '2' then 'フリー'
+         when '3' then '特殊'
+       end as タイプ,
+       count(イベント番号) as イベント数
+  from イベント
+ group by タイプ;
+
+-- 47. 経験イベントテーブルから、クリアの結果別にクリアしたイベントの数を取得する。クリア結果順に表示すること
+select クリア結果, count(イベント番号) as イベント数
+  from 経験イベント
+ where クリア区分 = '1'
+ group by クリア結果
+ order by クリア結果;
+
+-- 48. 攻撃魔法 '小さな奇跡' は、パーティー全員の MP によって敵の行動が異なる。
+-- 次の条件に従って、現在のパーティーがこの魔法を使った時の敵の行動を表示する
+-- パーティー全員の MP が 500 未満なら '敵は見とれている!'
+-- パーティー全員の MP が 500 以上 1000 未満なら '敵は呆然としている!'
+-- パーティー全員の MP が 1000 以上なら '敵はひれ伏している!'
+select case
+         when SUM(MP) < 500 then '敵は見とれている!'
+         when SUM(MP) >= 500 and SUM(MP) < 1000 then '敵は呆然としている!'
+         when SUM(MP) >= 1000 then 'ひれ伏している!'
+	   end as 小さな奇跡
+  from パーティー;
+
+-- 49. 経験イベントテーブルから、クリアしたイベント数と参加したもののまだクリアしていないイベントの数を次の形式で表示する
+-- 区分 / イベント数
+select case クリア区分 
+         when '1' then 'クリアした'
+         when '0' then '参加したがクリアしていない'
+       end as 区分,
+       count(イベント番号) as イベント数
+  from 経験イベント
+ group by クリア区分;
+
+-- 50. 職業タイプごとの HP と MP の最大値、最小値、平均値を抽出する
+-- ただし、職業タイプは職業コードの 1 文字目によって分類すること
+select substring(職業コード, 1, 1) as 職業タイプ,
+       MAX(HP) as 最大HP,
+       MIN(HP) as 最小HP,
+       AVG(MP) as 平均HP,
+       MAX(MP) as 最大MP,
+       MIN(MP) as 最小MP,
+       AVG(MP) as 平均MP
+  from パーティー
+ group by substring(職業コード, 1,1);
+
+-- 51. ID の 1 文字目によってパーティーを分類し、HP の平均が 100 を超えているデータを抽出する
+-- 次の項目を抽出すること
+-- ID による分類 / HP の平均 / MP の平均
+select substring(id, 1, 1) as IDによる分類,
+       AVG(HP) as HPの平均,
+       AVG(MP) as MPの平均
+  from パーティー
+ group by substring(id, 1, 1)
+having AVG(HP) >= 100;
+
+-- 52. ある洞窟に存在する '力の扉' は、キャラクターの HP によって開けることの出来る扉の数が決まっている
+-- 現在のパーティーで開けることのできる扉の合計数を求める
+-- 条件は次の通り
+-- HP < 100 のキャラクター : 1枚
+-- HP >= 100 かつ HP < 150 のキャラクター : 2 枚
+-- HP >= 150 かつ HP < 200 のキャラクター : 3 枚
+-- HP >= 200  のキャラクター : 5 枚
+select SUM(case
+	         when HP < 100 then 1
+	         when HP >= 100 and HP < 150 then 2
+	         when HP >= 150 and HP < 200 then 3
+	         when HP >= 200 then 5
+	       end) as 開けられる扉の数
+  from パーティー;
